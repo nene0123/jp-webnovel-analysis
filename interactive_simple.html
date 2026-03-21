@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>일본 웹소설 플랫폼 데이터 분석</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+body {
+  font-family: 'Noto Sans KR', 'Noto Sans JP', -apple-system, sans-serif;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0;
+  color: #333;
+  line-height: 1.75;
+  background: #fff;
+}
+
+/* -- Cover -- */
+.cover {
+  background: #fff;
+  color: #1a1a1a;
+  padding: 3.5rem 2rem 2.5rem;
+  text-align: center;
+  border-bottom: 1px solid #e5e7eb;
+  position: relative;
+}
+.cover::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, #1d4ed8, #6d28d9, #ea580c);
+}
+.cover h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+  line-height: 1.4;
+  color: #1a1a1a;
+}
+.cover .cover-sub {
+  font-size: 0.88rem;
+  color: #777;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.cover .nums {
+  display: flex;
+  justify-content: center;
+  gap: 2.5rem;
+  margin: 1.8rem 0 0.5rem;
+  flex-wrap: wrap;
+}
+.cover .num-block { text-align: center; }
+.cover .num-val {
+  font-size: 1.8rem;
+  font-weight: 700;
+  display: block;
+  line-height: 1.2;
+}
+.cover .num-val.cn { color: #1d4ed8; }
+.cover .num-val.ck { color: #ea580c; }
+.cover .num-lbl {
+  font-size: 0.75rem;
+  color: #aaa;
+  display: block;
+  margin-top: 0.2rem;
+}
+.cover .sub {
+  font-size: 0.82rem;
+  color: #aaa;
+  margin-top: 1.5rem;
+}
+
+/* -- Main content -- */
+.main { padding: 2rem 1.5rem; }
+
+h2 {
+  font-size: 1.15rem;
+  margin-top: 2.5rem;
+  margin-bottom: 0.4rem;
+  color: #1a1a1a;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.3rem;
+}
+
+p { margin: 0.4rem 0; font-size: 0.88rem; color: #555; }
+
+.chart-box {
+  margin: 1rem 0 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fafbfc;
+}
+.chart-box .cap { font-size: 0.75rem; color: #999; margin-bottom: 0.3rem; }
+.chart-box .hint { font-size: 0.7rem; color: #b0b0b0; margin-bottom: 0.8rem; font-style: italic; }
+
+.note {
+  background: #f7f7f8;
+  border-left: 3px solid #cbd5e1;
+  padding: 0.7rem 1rem;
+  margin: 0.8rem 0;
+  font-size: 0.83rem;
+  color: #555;
+  line-height: 1.75;
+}
+.note strong { color: #333; }
+
+.toggle { margin: 0.6rem 0; }
+.toggle button {
+  padding: 0.3rem 0.9rem;
+  margin-right: 0.25rem;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: #777;
+  transition: all 0.15s;
+}
+.toggle button.on-n { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+.toggle button.on-k { background: #ea580c; color: #fff; border-color: #ea580c; }
+
+footer {
+  margin-top: 3rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.75rem;
+  color: #aaa;
+  text-align: center;
+}
+
+/* -- Mobile -- */
+@media (max-width: 640px) {
+  .cover { padding: 2rem 1.2rem 1.5rem; }
+  .cover h1 { font-size: 1.2rem; }
+  .cover .num-val { font-size: 1.4rem; }
+  .cover .nums { gap: 1.5rem; }
+  .main { padding: 1.5rem 1rem; }
+  h2 { font-size: 1.05rem; }
+  p, .note { font-size: 0.82rem; }
+  .chart-box { padding: 0.7rem; }
+  .toggle button { padding: 0.25rem 0.7rem; font-size: 0.75rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>일본 웹소설 플랫폼 데이터 분석<br>— 175만 작품의 트렌드를 읽다</h1>
+  <p class="cover-sub">웹에서 쓰여지고 웹에서 읽히는 소설.<br>플랫폼의 메타데이터로 창작과 소비의 흐름을 추적합니다.</p>
+  <div class="nums">
+    <div class="num-block">
+      <span class="num-val cn">1,147,607</span>
+      <span class="num-lbl">소설가가 되자 (2004–2025)</span>
+    </div>
+    <div class="num-block">
+      <span class="num-val ck">602,120</span>
+      <span class="num-lbl">가쿠요무 (2015–2025)</span>
+    </div>
+  </div>
+  <p class="sub">남유민</p>
+</div>
+
+<div class="main">
+
+<p>소설가가 되자(小説家になろう)와 가쿠요무(カクヨム)는 일본 최대의 웹소설 투고 플랫폼입니다. 나로우 발 작품이 출판·애니메이션으로 미디어 믹스되는 사례가 증가하고 있으며, 가쿠요무는 종합엔터테인먼트 기업 KADOKAWA가 직접 운영하는 플랫폼으로, 출판 및 미디어믹스와의 연계 구조와 공모전·인센티브 제도를 통해 상업화 경로가 제도적으로 설계되어 있습니다. 본 분석에서는 두 플랫폼의 공개 메타데이터 <strong>175만 건</strong>을 Python 기반 웹 크롤링으로 수집·전처리한 뒤, Plotly.js를 활용하여 <strong>인터랙티브 시각화</strong>로 구현하였습니다. <strong>일본 디지털 대중문화 연구의 일환</strong>으로, 분석 결과를 교육 및 연구 활용이 가능한 형태로 구현한 사례입니다.</p>
+
+<h2>1. 연도별 투고수</h2>
+<div class="chart-box">
+  <div class="cap">Fig 1-1. 연도별 신규 투고 작품수</div>
+  <div class="hint">마우스를 올리면 연도·플랫폼별 수치를 확인할 수 있습니다 · 2025년은 수집 시점까지의 데이터</div>
+  <div id="c1" style="width:100%;height:370px;"></div>
+</div>
+<div class="chart-box">
+  <div class="cap">Fig 1-2. 동시 서비스 기간 중 플랫폼 점유율</div>
+  <div class="hint">두 플랫폼이 동시 운영된 2016–2025년 비교 · 마우스를 올리면 수치를 확인할 수 있습니다</div>
+  <div id="c1b" style="width:100%;height:300px;"></div>
+</div>
+<div class="note">가쿠요무는 2015년 베타, 2016년 정식 서비스를 시작한 이후 매년 성장하여 2025년에는 연간 투고수(139,534편)가 나로우(121,482편)를 추월했습니다. <strong>나로우 독점 구도에서 가쿠요무 주도의 역전</strong>이 현실화되었습니다.</div>
+
+<h2>2. 장르 분포</h2>
+<p>나로우는 대장르(大ジャンル) 체계, 가쿠요무는 독자적 세분류를 사용합니다.</p>
+<div class="toggle" id="tg2">
+  <button class="on-n" onclick="genre('n')">소설가가 되자</button>
+  <button onclick="genre('k')">가쿠요무</button>
+</div>
+<div class="chart-box">
+  <div class="cap" id="c2cap">Fig 2. 소설가가 되자 — 장르별 비율</div>
+  <div class="hint">각 영역에 마우스를 올리면 작품 수와 비율을 확인할 수 있습니다</div>
+  <div id="c2" style="width:100%;height:400px;"></div>
+</div>
+<div class="note" id="n2">나로우의 '논장르(ノンジャンル)' 20.1%는 2016년 장르 분류 개편 전 미분류 잔존입니다. 판타지 계열은 세계관에 따라 세분화되는데, 하이판타지(14.1%)는 현실과 무관한 가상 세계(중세풍 등), 로우판타지(6.1%)는 현실 세계에 판타지 요소가 개입하는 작품, 이세계〔연애〕(7.7%)는 이세계 전생·전이 배경의 연애물입니다. 이처럼 <strong>전통적 문학 장르론으로는 포착하기 어려운, 플랫폼 이용자가 자생적으로 만들어낸 분류 체계</strong>가 웹소설 창작 생태계의 특징입니다.</div>
+
+<h2>3. 전체 작품 vs 인기작 장르 비율</h2>
+<p>인기 상위 1%(나로우: 북마크수, 가쿠요무: 팔로워수 기준)의 장르 구성은 전체와 크게 다릅니다.</p>
+<div class="toggle" id="tg3">
+  <button class="on-n" onclick="gap('n')">소설가가 되자</button>
+  <button onclick="gap('k')">가쿠요무</button>
+  <button onclick="gap('c')">양 플랫폼 비교</button>
+</div>
+<div class="chart-box">
+  <div class="cap" id="c3cap">Fig 3. 소설가가 되자 — 전체 vs 인기 Top 1%</div>
+  <div class="hint">마우스를 올리면 장르별 비율을 확인할 수 있습니다</div>
+  <div id="c3" style="width:100%;height:380px;"></div>
+</div>
+<div class="note">양 플랫폼 모두 판타지가 인기작의 60% 이상을 차지하며, 기타·논장르·논픽션 계열은 인기작에서 사실상 소멸합니다. <strong>많이 쓰여지는 것과 많이 읽히는 것 사이에 극심한 괴리</strong>가 존재합니다.</div>
+
+<h2>4. 인기 장르의 연도별 추이</h2>
+<p>연도별 인기작(상위 1%) 내 장르 비율 변화입니다.</p>
+<div class="toggle" id="tg4">
+  <button class="on-n" onclick="trend('n')">소설가가 되자</button>
+  <button onclick="trend('k')">가쿠요무</button>
+</div>
+<div class="chart-box">
+  <div class="cap" id="c4cap">Fig 4. 소설가가 되자 — 인기 Top 1% 장르 추이</div>
+  <div class="hint">범례를 클릭하면 특정 장르를 숨기거나 강조할 수 있습니다</div>
+  <div id="c4" style="width:100%;height:400px;"></div>
+</div>
+<div class="note" id="n4"><strong>나로우:</strong> 2019년 이후 대장르 기준 '연애'가 '판타지'를 역전했습니다. 다만 '연애'에는 異世界〔恋愛〕(이세계 연애)가 포함되어 있어, 이세계 무대 작품의 비중 자체는 여전히 높습니다. 이세계물의 주류가 모험·전생에서 연애로 이동한 것으로 보여집니다.</div>
+
+<h2>5. 키워드 Top 15</h2>
+<p>작가가 직접 부여하는 키워드(나로우)와 태그(가쿠요무)입니다.</p>
+<div class="toggle" id="tg5">
+  <button class="on-n" onclick="kw('n')">소설가가 되자</button>
+  <button onclick="kw('k')">가쿠요무</button>
+</div>
+<div class="chart-box">
+  <div class="cap" id="c5cap">Fig 5. 소설가가 되자 — 키워드 Top 15</div>
+  <div class="hint">마우스를 올리면 정확한 작품 수를 확인할 수 있습니다</div>
+  <div id="c5" style="width:100%;height:460px;"></div>
+</div>
+<div class="note" id="n5"><strong>나로우:</strong> 'R15', '잔혹한 묘사 있음'은 셀프 레이팅 시스템에 의한 것입니다. 판타지가 장르 대세임에도 '일상(244K)'과 'ほのぼの(훈훈, 115K)'가 상위권으로, <strong>판타지 세계관 속에서 일상·힐링을 소비하는 독특한 수요 구조</strong>가 확인됩니다. '남주인공(165K)'이 '여주인공(121K)'의 약 1.35배로, <strong>남성 독자 중심이라는 인상론을 데이터가 정량적으로 뒷받침</strong>합니다.</div>
+
+</div><!-- /main -->
+
+<footer>
+  <p>남유민 · 데이터: 小説家になろう(syosetu.com) · カクヨム(kakuyomu.jp) · © 2026</p>
+</footer>
+
+<script>
+var CN='#1d4ed8', CNL='#93bbfd', CK='#ea580c', CKL='#fdba74';
+var LO={paper_bgcolor:'#fafbfc',plot_bgcolor:'#fafbfc',font:{family:'Noto Sans KR, Noto Sans JP, sans-serif',size:11,color:'#555'},margin:{l:50,r:20,t:10,b:40},hoverlabel:{bgcolor:'#fff',bordercolor:'#e5e7eb',font:{size:11,color:'#333'}}};
+var CF={displayModeBar:false,responsive:true};
+
+// -- 1. Yearly --
+Plotly.newPlot('c1',[
+  {x:[2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],y:[254, 1367, 3867, 8138, 9448, 11760, 18957, 27881, 37223, 44437, 55100, 64462, 70967, 80435, 82372, 83555, 90129, 90360, 82052, 80533, 82828, 121482],name:'소설가가 되자',type:'bar',marker:{color:CN,cornerradius:2},hovertemplate:'%{x}년: %{y:,}편<extra>なろう</extra>'},
+  {x:[2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],y:[445, 21356, 23342, 28978, 40738, 53272, 60593, 69604, 79324, 84934, 139534],name:'가쿠요무',type:'bar',marker:{color:CK,cornerradius:2},hovertemplate:'%{x}년: %{y:,}편<extra>カクヨム</extra>'}
+],{...LO,barmode:'group',legend:{orientation:'h',y:1.08,x:0.5,xanchor:'center'},xaxis:{dtick:2,gridcolor:'#f0f0f0'},yaxis:{separatethousands:true,gridcolor:'#f0f0f0'}},CF);
+
+// -- 1b. Share --
+(function(){
+  var ny=[70967,80435,82372,83555,90129,90360,82052,80533,82828,121482];
+  var ky=[21356,23342,28978,40738,53272,60593,69604,79324,84934,139534];
+  var yrs=[2016,2017,2018,2019,2020,2021,2022,2023,2024,2025],nP=[],kP=[];
+  for(var i=0;i<yrs.length;i++){var t=ny[i]+ky[i];nP.push(+(ny[i]/t*100).toFixed(1));kP.push(+(ky[i]/t*100).toFixed(1));}
+  Plotly.newPlot('c1b',[
+    {x:yrs,y:nP,name:'소설가가 되자',type:'scatter',mode:'lines+markers',line:{color:CN,width:2,shape:'spline'},marker:{size:5},fill:'tozeroy',fillcolor:'rgba(29,78,216,0.06)',hovertemplate:'%{x}년: %{y}%<extra>なろう</extra>'},
+    {x:yrs,y:kP,name:'가쿠요무',type:'scatter',mode:'lines+markers',line:{color:CK,width:2,shape:'spline'},marker:{size:5},fill:'tozeroy',fillcolor:'rgba(234,88,12,0.06)',hovertemplate:'%{x}년: %{y}%<extra>カクヨム</extra>'}
+  ],{...LO,legend:{orientation:'h',y:1.08,x:0.5,xanchor:'center'},xaxis:{dtick:1,gridcolor:'#f0f0f0'},yaxis:{range:[0,100],ticksuffix:'%',gridcolor:'#f0f0f0'}},CF);
+})();
+
+// -- 2. Genre --
+var GD={
+  n:{l:['ノンジャンル(논장르)','ハイファンタジー(하이판타지)','現実世界〔恋愛〕(현실 연애)','ヒューマンドラマ(휴먼드라마)','異世界〔恋愛〕(이세계 연애)','ローファンタジー(로우판타지)','その他(기타)','詩(시)','エッセイ(에세이)','ホラー(호러)'],v:[230196, 161710, 98120, 93389, 88025, 69861, 62713, 62263, 51663, 42077],c:['#1d4ed8','#3b6fea','#5b8af5','#7ea8f8','#a3c3fb','#6d28d9','#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe']},
+  k:{l:['ファンタジー(판타지)','ドラマ(드라마)','その他(기타)','恋愛(연애)','アクション(액션)','SF','ロマンス(로맨스)','ホラー(호러)','ノンフィクション(논픽션)','ミステリー(미스터리)'],v:[102728, 92844, 73231, 70689, 69109, 38205, 37657, 36424, 35533, 17568],c:['#ea580c','#f97316','#fb923c','#fdba74','#fed7aa','#c2410c','#d4590c','#e8720c','#fbbf24','#fef3c7']}
+};
+function genre(p){
+  sel('tg2',p);
+  var d=p==='n'?GD.n:GD.k;
+  document.getElementById('c2cap').textContent='Fig 2. '+(p==='n'?'소설가가 되자':'가쿠요무')+' — 장르별 비율';
+  Plotly.react('c2',[{labels:d.l,values:d.v,type:'pie',hole:0.45,marker:{colors:d.c,line:{color:'#fff',width:1.5}},textinfo:'percent',textposition:'outside',textfont:{size:9},hovertemplate:'%{label}<br>%{value:,}편 (%{percent})<extra></extra>'}],{...LO,showlegend:false,margin:{l:10,r:10,t:10,b:10}},CF);
+  document.getElementById('n2').innerHTML=p==='n'
+    ?'나로우의 \'논장르(ノンジャンル)\' 20.1%는 2016년 분류 개편 전 미분류 잔존입니다. 판타지 계열은 세계관에 따라 하이판타지(14.1%, 가상 세계), 로우판타지(6.1%, 현실+판타지), 이세계〔연애〕(7.7%, 이세계 전생·전이 배경)로 세분화됩니다. <strong>전통적 문학 장르론으로는 포착하기 어려운, 플랫폼 이용자가 자생적으로 만들어낸 분류 체계</strong>가 특징적입니다.'
+    :'가쿠요무는 판타지(17.1%)·드라마(15.4%)·기타(12.2%)·연애(11.7%)·액션(11.5%)이 고르게 분포하여, 나로우에 비해 <strong>특정 장르로의 쏠림 없이 다양한 창작이 이루어지고 있습니다</strong>.';
+}
+
+// -- 3. Gap --
+var PD={
+  n:{g:['SF','その他(기타)','ノンジャンル(논장르)','ファンタジー(판타지)','恋愛(연애)','文芸(문예)'],a:[3.6, 17.1, 20.1, 20.2, 16.2, 22.8],t:[5.0, 0.3, 4.1, 40.0, 44.3, 6.3]},
+  k:{g:['SF','その他(기타)','アクション(액션)','ドラマ(드라마)','ファンタジー(판타지)','ホラー(호러)','ロマンス(로맨스)','恋愛(연애)','歴史(역사)'],a:[6.3, 12.2, 11.5, 15.4, 17.1, 6.0, 6.3, 11.7, 2.1],t:[3.7, 0.0, 18.6, 2.3, 47.7, 0.4, 20.7, 4.8, 1.6]}
+};
+function gap(p){
+  sel3('tg3',p);
+  if(p==='c'){
+    document.getElementById('c3cap').textContent='Fig 3. 판타지(ファンタジー) — 전체 대비 인기작 점유율 비교';
+    Plotly.react('c3',[{
+      y:['なろう 전체','なろう Top 1%',' ','カクヨム 전체','カクヨム Top 1%'],
+      x:[20.2,40.0,null,17.1,47.7],type:'bar',orientation:'h',
+      marker:{color:[CNL,CN,'rgba(0,0,0,0)',CKL,CK],cornerradius:2},
+      text:['20.2%','40.0%','','17.1%','47.7%'],textposition:'outside',textfont:{size:10,color:'#555'},
+      hovertemplate:'%{y}: %{x}%<extra>판타지</extra>',showlegend:false
+    }],{...LO,xaxis:{ticksuffix:'%',range:[0,75],gridcolor:'#f0f0f0'},yaxis:{autorange:'reversed',gridcolor:'#f0f0f0'},margin:{l:120,r:40,t:10,b:40}},CF);
+  } else {
+    var d=p==='n'?PD.n:PD.k;
+    document.getElementById('c3cap').textContent='Fig 3. '+(p==='n'?'소설가가 되자':'가쿠요무')+' — 전체 vs 인기 Top 1%';
+    Plotly.react('c3',[
+      {y:d.g,x:d.a,type:'bar',orientation:'h',name:'전체',marker:{color:p==='n'?CNL:CKL,cornerradius:2},hovertemplate:'%{y}: %{x}%<extra>전체</extra>'},
+      {y:d.g,x:d.t,type:'bar',orientation:'h',name:'인기 Top 1%',marker:{color:p==='n'?CN:CK,cornerradius:2},hovertemplate:'%{y}: %{x}%<extra>Top 1%</extra>'}
+    ],{...LO,barmode:'group',legend:{orientation:'h',y:1.06,x:0.5,xanchor:'center'},xaxis:{ticksuffix:'%',range:[0,75],gridcolor:'#f0f0f0'},yaxis:{autorange:'reversed',gridcolor:'#f0f0f0'},margin:{l:140,r:20,t:20,b:40}},CF);
+  }
+}
+
+// -- 4. Trend --
+var TD={
+  n:{y:[2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025],s:{'판타지':[34.1, 42.8, 49.9, 47.7, 52.5, 53.4, 49.7, 41.9, 42.6, 37.5, 33.5, 33.0, 27.2, 22.9],'연애':[22.6, 23.9, 23.2, 29.5, 30.6, 32.3, 33.7, 47.1, 46.3, 53.4, 60.2, 58.6, 65.8, 66.5],'문예':[5.6, 7.4, 6.7, 7.8, 7.6, 7.6, 10.1, 5.6, 5.8, 5.0, 3.7, 4.6, 3.6, 6.9],'SF':[5.6, 6.3, 4.7, 5.6, 7.8, 6.3, 6.4, 5.3, 5.3, 4.1, 2.6, 3.7, 3.4, 2.9]}},
+  k:{y:[2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],s:{'판타지':[49.3, 52.8, 56.4, 50.4, 53.0, 53.7, 55.0, 45.1, 50.4, 37.2],'로맨스':[11.7, 12.0, 13.1, 21.6, 22.2, 19.5, 22.3, 16.3, 19.2, 25.1],'액션':[8.9, 8.6, 7.6, 8.8, 9.4, 11.1, 13.6, 28.2, 20.3, 23.7],'연애':[3.3, 7.7, 7.6, 12.3, 7.5, 6.3, 3.3, 3.2, 2.9, 3.8],'SF':[8.0, 4.3, 4.5, 2.5, 3.9, 3.8, 2.9, 3.2, 4.2, 3.9]}}
+};
+var TC=[CN,CK,'#6b7280','#d97706','#0891b2'];
+function trend(p){
+  sel('tg4',p);
+  var d=p==='n'?TD.n:TD.k;
+  document.getElementById('c4cap').textContent='Fig 4. '+(p==='n'?'소설가가 되자':'가쿠요무')+' — 인기 Top 1% 장르 추이';
+  var tr=Object.entries(d.s).map(function(e,i){return{x:d.y,y:e[1],name:e[0],type:'scatter',mode:'lines+markers',line:{width:2,color:TC[i]},marker:{size:5}};});
+  Plotly.react('c4',tr,{...LO,legend:{orientation:'h',y:1.1,x:0.5,xanchor:'center'},xaxis:{dtick:1,gridcolor:'#f0f0f0'},yaxis:{ticksuffix:'%',range:[0,75],gridcolor:'#f0f0f0'},margin:{l:45,r:20,t:30,b:40}},CF);
+  document.getElementById('n4').innerHTML=p==='n'
+    ?'<strong>나로우:</strong> 2019년 이후 대장르 기준 \'연애\'가 \'판타지\'를 역전했습니다. 다만 \'연애\'에는 異世界〔恋愛〕(이세계 연애)가 포함되어 있어, 이세계 무대 작품의 비중 자체는 여전히 높습니다. 이세계물의 주류가 모험·전생에서 연애로 이동한 것으로 보여집니다.'
+    :'<strong>가쿠요무:</strong> 판타지가 2022년 55.0%에서 2025년 37.2%로 뚜렷한 하락세를 보이는 반면, 액션(アクション)이 2023년 28.2%로 급등 후 23.7%를 유지하고, 로맨스(ロマンス)도 25.1%까지 상승하며 <strong>삼강 구도로 재편</strong>되고 있습니다.';
+}
+
+// -- 5. Keywords --
+var KD={
+  n:{l:['R15','残酷な描写あり(잔혹한 묘사)','日常(일상)','男主人公(남주인공)','青春(청춘)','現代(현대)','女主人公(여주인공)','シリアス(시리어스)','ほのぼの(훈훈)','魔法(마법)','冒険(모험)','恋愛(연애)','異世界転生(이세계 전생)','ハッピーエンド(해피엔딩)','異世界転移(이세계 전이)'],c:[278768, 255260, 244445, 165135, 149609, 141087, 121006, 119947, 115825, 108907, 107632, 87485, 82153, 80956, 80335]},
+  k:{l:['短編(단편)','カクヨムオンリー(가쿠요무 독점)','恋愛(연애)','学園(학원)','ファンタジー(판타지)','ライトノベル(라이트노벨)','魔法(마법)','異世界(이세계)','青春(청춘)','ラブコメ(러브코미디)','日常(일상)','ショートショート(쇼트쇼트)','ホラー(호러)','コメディ(코미디)','男主人공(남주인공)'],c:[86189, 56395, 52473, 32380, 30800, 29225, 27394, 24736, 23064, 21907, 19845, 19148, 18588, 17564, 17562]}
+};
+function kw(p){
+  sel('tg5',p);
+  var d=p==='n'?KD.n:KD.k;
+  var ll=d.l.slice().reverse(),cc=d.c.slice().reverse();
+  document.getElementById('c5cap').textContent='Fig 5. '+(p==='n'?'소설가가 되자':'가쿠요무')+' — 키워드 Top 15';
+  Plotly.react('c5',[{y:ll,x:cc,type:'bar',orientation:'h',marker:{color:p==='n'?'rgba(29,78,216,0.55)':'rgba(234,88,12,0.55)',cornerradius:2},hovertemplate:'%{y}: %{x:,}편<extra></extra>'}],{...LO,xaxis:{separatethousands:true,gridcolor:'#f0f0f0'},yaxis:{gridcolor:'#f0f0f0'},margin:{l:200,r:20,t:10,b:40}},CF);
+  document.getElementById('n5').innerHTML=p==='n'
+    ?'<strong>나로우:</strong> \'R15\', \'잔혹한 묘사 있음\'은 셀프 레이팅 시스템에 의한 것입니다. 판타지가 장르 대세임에도 \'일상(244K)\'과 \'ほのぼの(훈훈, 115K)\'가 상위권으로, <strong>판타지 세계관 속에서 일상·힐링을 소비하는 독특한 수요 구조</strong>가 확인됩니다. \'남주인공(165K)\'이 \'여주인공(121K)\'의 약 1.35배로, <strong>남성 독자 중심이라는 인상론을 데이터가 정량적으로 뒷받침</strong>합니다.'
+    :'<strong>가쿠요무:</strong> \'단편(短編)\'이 1위로, 짧은 형식의 글쓰기가 특징적입니다. \'가쿠요무 독점(カクヨムオンリー)\'이 2위인 것은 양 플랫폼 동시 연재가 가능함에도 가쿠요무만을 택하는 작가가 많다는 뜻으로, <strong>신규 유입이 가쿠요무 쪽으로 집중</strong>되는 추세와 맞물려 읽을 수 있습니다.';
+}
+
+// -- Toggle helpers --
+function sel(id,p){
+  var bs=document.getElementById(id).querySelectorAll('button');
+  bs.forEach(function(b){b.className='';});
+  bs[p==='n'?0:1].className=p==='n'?'on-n':'on-k';
+}
+function sel3(id,p){
+  var bs=document.getElementById(id).querySelectorAll('button');
+  bs.forEach(function(b){b.className='';});
+  var idx=p==='n'?0:p==='k'?1:2;
+  bs[idx].className=p==='n'?'on-n':p==='k'?'on-k':'on-n';
+}
+
+// -- Init --
+genre('n');gap('n');trend('n');kw('n');
+</script>
+</body>
+</html>
